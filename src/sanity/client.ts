@@ -1,6 +1,6 @@
 import { createClient } from 'next-sanity'
 import imageUrlBuilder from '@sanity/image-url'
-import { apiVersion, dataset, projectId, isSanityConfigured } from './env'
+import { apiVersion, dataset, projectId, token, isSanityConfigured } from './env'
 import { Product } from '@/types/product'
 import { PRODUCTS } from '@/data/products'
 
@@ -9,7 +9,8 @@ export const sanityClient = isSanityConfigured
       projectId,
       dataset,
       apiVersion,
-      useCdn: true,
+      useCdn: !token,
+      token: token || undefined,
     })
   : null
 
