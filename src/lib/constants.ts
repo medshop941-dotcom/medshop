@@ -39,12 +39,22 @@ export function isValidMoroccanPhone(phone: string): boolean {
   return regex.test(cleaned)
 }
 
+export function getStorePhoneNumber(): string {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('medshop_store_whatsapp')
+    if (saved && saved.length >= 10) return saved
+  }
+  return STORE_PHONE_NUMBER
+}
+
 export function generateWhatsAppOrderUrl(params: {
   customer: CustomerOrderInfo
   items: CartItem[]
   language: 'fr' | 'ar'
+  whatsappNumber?: string
 }): string {
-  const { customer, items, language } = params
+  const { customer, items, language, whatsappNumber } = params
+  const targetPhone = whatsappNumber || getStorePhoneNumber()
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const { fee } = calculateDelivery(subtotal)
   const total = subtotal + fee
@@ -82,5 +92,5 @@ export function generateWhatsAppOrderUrl(params: {
       `💳 *Paiement:* À la livraison\n\n` +
       `Merci de confirmer la commande!`
 
-  return `https://wa.me/${STORE_PHONE_NUMBER}?text=${encodeURIComponent(message)}`
+  return `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`
 }

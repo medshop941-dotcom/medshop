@@ -1,14 +1,23 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/context/LanguageContext'
-import { STORE_PHONE_DISPLAY, STORE_PHONE_NUMBER } from '@/lib/constants'
+import { STORE_PHONE_DISPLAY, STORE_PHONE_NUMBER, getStorePhoneNumber } from '@/lib/constants'
+import { getStoreSettingsAction } from '@/app/actions/settings'
 import { Phone, MapPin, MessageCircle, ShieldCheck, Truck } from 'lucide-react'
 
 const CURRENT_YEAR = 2026
 
 export function Footer() {
   const { t, isRtl } = useLanguage()
+  const [phone, setPhone] = useState<string>(() => getStorePhoneNumber())
+
+  useEffect(() => {
+    getStoreSettingsAction().then((s) => {
+      if (s?.whatsappNumber) setPhone(s.whatsappNumber)
+    })
+  }, [])
 
   return (
     <footer className="bg-black text-white border-t border-neutral-800/90 mt-auto">
@@ -118,7 +127,7 @@ export function Footer() {
                 : 'Pour toute question ou commande spécifique, contactez notre équipe sur WhatsApp.'}
             </p>
             <a
-              href={`https://wa.me/${STORE_PHONE_NUMBER}`}
+              href={`https://wa.me/${phone}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 bg-gold-gradient text-black px-5 py-3 rounded-xl font-bold hover:bg-gold-gradient-dark transition-all duration-200 text-sm shadow-gold transform hover:scale-102 cursor-pointer"

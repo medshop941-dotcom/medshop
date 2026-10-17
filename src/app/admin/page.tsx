@@ -21,6 +21,10 @@ import {
   updateCategoryAction,
   deleteCategoryAction,
 } from '@/app/actions/categories'
+import {
+  getStoreSettingsAction,
+  updateStoreSettingsAction,
+} from '@/app/actions/settings'
 import { uploadImageAction } from '@/app/actions/upload'
 import {
   ShoppingBag,
@@ -50,6 +54,7 @@ import {
   FolderPlus,
   Layers,
   ArrowUpRight,
+  Settings,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -95,8 +100,13 @@ export default function AdminPage() {
   const [passcode, setPasscode] = useState('')
   const [authError, setAuthError] = useState(false)
 
-  // Active Tab: 'orders' | 'products' | 'categories'
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories'>('orders')
+  // Active Tab: 'orders' | 'products' | 'categories' | 'settings'
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'settings'>('orders')
+
+  // --- Store Settings State ---
+  const [whatsappNumber, setWhatsappNumber] = useState('212600000000')
+  const [phoneInput, setPhoneInput] = useState('')
+  const [isSavingPhone, setIsSavingPhone] = useState(false)
 
   // --- Orders State ---
   const [orders, setOrders] = useState<DbOrder[]>([])
@@ -189,10 +199,48 @@ export default function AdminPage() {
     }
   }
 
+  const fetchSettings = async () => {
+    try {
+      const s = await getStoreSettingsAction()
+      if (s?.whatsappNumber) {
+        setWhatsappNumber(s.whatsappNumber)
+        setPhoneInput(s.whatsappNumber)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('medshop_store_whatsapp', s.whatsappNumber)
+        }
+      }
+    } catch (err) {
+      console.warn('fetchSettings error:', err)
+    }
+  }
+
+  const handleSavePhone = async (e: FormEvent) => {
+    e.preventDefault()
+    setIsSavingPhone(true)
+    try {
+      const res = await updateStoreSettingsAction(phoneInput)
+      if (res.success && res.whatsappNumber) {
+        setWhatsappNumber(res.whatsappNumber)
+        setPhoneInput(res.whatsappNumber)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('medshop_store_whatsapp', res.whatsappNumber)
+        }
+        toast.success(`Numéro WhatsApp mis à jour : +${res.whatsappNumber}`)
+      } else {
+        toast.error(res.error || 'Erreur lors de la mise à jour')
+      }
+    } catch {
+      toast.error('Une erreur inattendue est survenue')
+    } finally {
+      setIsSavingPhone(false)
+    }
+  }
+
   const refreshAll = () => {
     fetchOrders()
     fetchProducts()
     fetchCategories()
+    fetchSettings()
   }
 
   useEffect(() => {
@@ -748,6 +796,18 @@ export default function AdminPage() {
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Catégories ({categories.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'bg-gold text-black shadow-xs'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Paramètres</span>
             </button>
           </div>
 
@@ -1443,6 +1503,126 @@ export default function AdminPage() {
               </div>
             )}
           </>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 4: PARAMÈTRES (SETTINGS) */}
+        {/* ========================================================================= */}
+        {activeTab === 'settings' && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* WhatsApp Number Card */}
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-neutral-200/90 shadow-xs space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200/60">
+                  <MessageCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-neutral-900">
+                    Numéro WhatsApp de Réception des Commandes
+                  </h3>
+                  <p className="text-xs text-neutral-500">
+                    Toutes les commandes passées par vos clients sur la boutique seront envoyées sur ce numéro.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSavePhone} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-2">
+                    Numéro de Téléphone (Format Marocain)
+                  </label>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="relative flex-1">
+                      <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        placeholder="ex: 0612345678 ou 212612345678"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-200 text-sm font-bold text-neutral-900 focus:outline-none focus:border-gold"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSavingPhone}
+                      className="bg-gold-gradient text-black px-6 py-3 rounded-xl font-bold text-xs hover:bg-gold-gradient-dark transition-all shadow-gold cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                    >
+                      {isSavingPhone ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Enregistrement...</span>
+                        </>
+                      ) : (
+                        <span>Enregistrer le Numéro</span>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-neutral-500 mt-2">
+                    Vous pouvez saisir le numéro commençant par <strong>06...</strong>, <strong>07...</strong> ou avec l&apos;indicatif <strong>212...</strong>. Il est automatiquement formaté pour WhatsApp.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div>
+                    <span className="font-bold text-emerald-900">Numéro actuellement actif :</span>{' '}
+                    <span className="font-mono font-bold text-emerald-700">+{whatsappNumber}</span>
+                  </div>
+                  <a
+                    href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Test de message WhatsApp depuis Med Shop Admin')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-emerald-800 hover:text-emerald-950 font-bold underline"
+                  >
+                    <span>Envoyer un message de test</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </form>
+            </div>
+
+            {/* Supabase & Database Status Card */}
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-neutral-200/90 shadow-xs space-y-4">
+              <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                <div className="w-12 h-12 rounded-2xl bg-gold/10 text-gold flex items-center justify-center shrink-0 border border-gold/30">
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-neutral-900">
+                    Infrastructure & Base de Données
+                  </h3>
+                  <p className="text-xs text-neutral-500">
+                    État de votre base de données Supabase PostgreSQL et du stockage.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                  <p className="text-neutral-500 font-bold mb-1">Base de Données</p>
+                  <p className="text-emerald-600 font-black flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Supabase Connecté
+                  </p>
+                </div>
+
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                  <p className="text-neutral-500 font-bold mb-1">Stockage Photos</p>
+                  <p className="text-emerald-600 font-black flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Bucket &quot;medshop-media&quot; Actif
+                  </p>
+                </div>
+
+                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                  <p className="text-neutral-500 font-bold mb-1">Mot de Passe Admin</p>
+                  <p className="text-neutral-900 font-mono font-bold">
+                    medshop2026
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
