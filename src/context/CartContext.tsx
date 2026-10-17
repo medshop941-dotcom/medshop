@@ -14,8 +14,8 @@ import { CartItem } from '@/types/product'
 interface CartContextType {
   cart: CartItem[]
   addToCart: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void
-  removeFromCart: (id: number) => void
-  updateQuantity: (id: number, quantity: number) => void
+  removeFromCart: (id: number | string) => void
+  updateQuantity: (id: number | string, quantity: number) => void
   clearCart: () => void
   cartTotal: number
   cartCount: number
@@ -75,12 +75,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const removeFromCart = useCallback((id: number) => {
+  const removeFromCart = useCallback((id: number | string) => {
     setCart((prev) => prev.filter((item) => item.id !== id))
   }, [])
 
   const updateQuantity = useCallback(
-    (id: number, quantity: number) => {
+    (id: number | string, quantity: number) => {
       if (quantity < 1) {
         removeFromCart(id)
         return

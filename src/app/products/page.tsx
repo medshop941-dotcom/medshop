@@ -4,9 +4,10 @@ import { useLanguage } from '@/context/LanguageContext'
 import { ProductDrawer } from '@/components/ProductDrawer'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Product } from '@/types/product'
-import { getAllProducts, getCategories } from '@/data/products'
+import { getAllProducts } from '@/data/products'
+import { fetchCatalogProductsAction } from '@/app/actions/products'
 import { Eye, ArrowRight, ArrowLeft } from 'lucide-react'
 
 export default function ProductsPage() {
@@ -14,16 +15,33 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [products, setProducts] = useState<Product[]>(() => getAllProducts())
 
-  const allProducts = getAllProducts()
-  const categories = useMemo(() => getCategories(language), [language])
+  useEffect(() => {
+    fetchCatalogProductsAction().then((liveProducts) => {
+      if (liveProducts && liveProducts.length > 0) {
+        setProducts(liveProducts)
+      }
+    })
+  }, [])
+
+  const categories = useMemo(() => {
+    const isAr = language === 'ar'
+    const unique = Array.from(
+      new Set(products.map((p) => (isAr ? p.categoryAr : p.category)).filter(Boolean))
+    )
+    return [
+      { key: 'all', label: isAr ? 'الكل' : 'Tous' },
+      ...unique.map((c) => ({ key: c, label: c })),
+    ]
+  }, [products, language])
 
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'all') return allProducts
-    return allProducts.filter((p) =>
+    if (selectedCategory === 'all') return products
+    return products.filter((p) =>
       isRtl ? p.categoryAr === selectedCategory : p.category === selectedCategory
     )
-  }, [allProducts, selectedCategory, isRtl])
+  }, [products, selectedCategory, isRtl])
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product)

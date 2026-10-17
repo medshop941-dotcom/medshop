@@ -94,7 +94,7 @@ function CartDrawerContent({ onClose }: { onClose: () => void }) {
     onClose()
   }
 
-  const handleItemRemove = (id: number) => {
+  const handleItemRemove = (id: number | string) => {
     removeFromCart(id)
     toast.info(t.toasts.removedFromCart)
   }

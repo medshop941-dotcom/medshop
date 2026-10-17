@@ -1,5 +1,5 @@
 export interface Product {
-  id: number
+  id: number | string
   name: string
   nameAr: string
   description: string
@@ -14,7 +14,7 @@ export interface Product {
 }
 
 export interface CartItem {
-  id: number
+  id: number | string
   name: string
   nameAr: string
   price: number

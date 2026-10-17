@@ -209,8 +209,8 @@ export function getFeaturedProducts(): Product[] {
 }
 
 export function getProductById(id: number | string): Product | undefined {
-  const numericId = typeof id === 'string' ? parseInt(id, 10) : id
-  return PRODUCTS.find((p) => p.id === numericId)
+  const idStr = id.toString()
+  return PRODUCTS.find((p) => p.id.toString() === idStr)
 }
 
 export function getCategories(language: 'fr' | 'ar'): { key: string; label: string }[] {

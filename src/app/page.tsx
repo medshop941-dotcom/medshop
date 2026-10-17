@@ -4,9 +4,10 @@ import { useLanguage } from '@/context/LanguageContext'
 import { ProductDrawer } from '@/components/ProductDrawer'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Product } from '@/types/product'
 import { getFeaturedProducts } from '@/data/products'
+import { fetchCatalogProductsAction } from '@/app/actions/products'
 import {
   ArrowRight,
   ArrowLeft,
@@ -25,8 +26,16 @@ export default function Home() {
   const { t, isRtl } = useLanguage()
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(() => getFeaturedProducts())
 
-  const featuredProducts = getFeaturedProducts()
+  useEffect(() => {
+    fetchCatalogProductsAction().then((liveProducts) => {
+      if (liveProducts && liveProducts.length > 0) {
+        const featured = liveProducts.filter((p) => p.featured)
+        setFeaturedProducts(featured.length > 0 ? featured : liveProducts.slice(0, 8))
+      }
+    })
+  }, [])
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product)

@@ -40,7 +40,7 @@ export default function CartPage() {
     )
   }
 
-  const handleRemove = (id: number) => {
+  const handleRemove = (id: number | string) => {
     removeFromCart(id)
     toast.info(t.toasts.removedFromCart)
   }

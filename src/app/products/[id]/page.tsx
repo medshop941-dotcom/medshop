@@ -1,6 +1,20 @@
 import { Metadata } from 'next'
 import { PRODUCTS, getProductById } from '@/data/products'
+import { fetchCatalogProductsAction } from '@/app/actions/products'
 import { ProductDetailView } from '@/components/ProductDetailView'
+import { Product } from '@/types/product'
+
+async function findProduct(id: string): Promise<Product | undefined> {
+  const local = getProductById(id)
+  if (local) return local
+
+  try {
+    const live = await fetchCatalogProductsAction()
+    return live.find((p) => p.id.toString() === id.toString())
+  } catch {
+    return undefined
+  }
+}
 
 export function generateStaticParams() {
   return PRODUCTS.map((product) => ({
@@ -14,7 +28,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
-  const product = getProductById(id)
+  const product = await findProduct(id)
 
   if (!product) {
     return {
@@ -40,7 +54,7 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const product = getProductById(id)
+  const product = await findProduct(id)
 
   return <ProductDetailView product={product} />
 }
