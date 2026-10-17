@@ -45,7 +45,20 @@ CREATE TABLE IF NOT EXISTS public.products (
 CREATE INDEX IF NOT EXISTS idx_products_category ON public.products (category);
 CREATE INDEX IF NOT EXISTS idx_products_featured ON public.products (featured);
 
--- 3. ROW LEVEL SECURITY (RLS)
+-- 3. CATEGORIES TABLE
+CREATE TABLE IF NOT EXISTS public.categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    name TEXT NOT NULL UNIQUE,
+    name_ar TEXT NOT NULL,
+    image TEXT NOT NULL DEFAULT '/logo.jpg',
+    description TEXT,
+    description_ar TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_categories_name ON public.categories (name);
+
+-- 4. ROW LEVEL SECURITY (RLS)
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
@@ -75,7 +88,22 @@ TO service_role
 USING (true) 
 WITH CHECK (true);
 
--- 4. SEED PRODUCTS
+-- Allow public read access to categories
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access on categories" 
+ON public.categories FOR SELECT 
+TO anon, authenticated 
+USING (true);
+
+-- Allow service role full access to categories
+CREATE POLICY "Allow service role full access on categories" 
+ON public.categories FOR ALL 
+TO service_role 
+USING (true) 
+WITH CHECK (true);
+
+-- 5. SEED PRODUCTS
 INSERT INTO public.products (id, name, name_ar, description, description_ar, price, original_price, image, category, category_ar, in_stock, featured)
 VALUES
 (1, 'Sac à Main Cuir Noir Élite', 'حقيبة يد جلدية سوداء فاخرة', 'Confectionnée en cuir d’exception avec finitions dorées artisanales. Spacieuse, élégante et résistante pour vos journées actives et soirées habillées.', 'مصنوعة من جلد ممتاز مع لمسات ذهبية أنيقة. واسعة وعصرية ومتينة تناسب جميع إطلالاتك اليومية والمناسبات الراقية.', 450, 550, '/logo.jpg', 'Sacs à Main', 'حقائب يد', 12, true),

@@ -6,8 +6,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Product } from '@/types/product'
+import { CategoryItem } from '@/types/category'
 import { getFeaturedProducts } from '@/data/products'
 import { fetchCatalogProductsAction } from '@/app/actions/products'
+import { fetchCategoriesListAction } from '@/app/actions/categories'
 import {
   ArrowRight,
   ArrowLeft,
@@ -27,12 +29,19 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(() => getFeaturedProducts())
+  const [categories, setCategories] = useState<CategoryItem[]>([])
 
   useEffect(() => {
     fetchCatalogProductsAction().then((liveProducts) => {
       if (liveProducts && liveProducts.length > 0) {
         const featured = liveProducts.filter((p) => p.featured)
         setFeaturedProducts(featured.length > 0 ? featured : liveProducts.slice(0, 8))
+      }
+    })
+
+    fetchCategoriesListAction().then((cats) => {
+      if (cats && cats.length > 0) {
+        setCategories(cats)
       }
     })
   }, [])
@@ -163,40 +172,65 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {categoryUniverses.map((univ) => {
-              const Icon = univ.icon
-              return (
-                <Link
-                  key={univ.title}
-                  href="/products"
-                  className="group relative p-6 md:p-8 rounded-2xl bg-neutral-900/70 border border-neutral-800 hover:border-gold/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-gold flex flex-col justify-between"
-                >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {(categories.length > 0
+              ? categories.map((cat) => ({
+                  title: isRtl ? cat.nameAr : cat.name,
+                  subtitle: isRtl
+                    ? cat.descriptionAr || 'تشكيلة فاخرة وحصرية'
+                    : cat.description || 'Collection raffinée et intemporelle',
+                  image: cat.image,
+                  href: `/products?category=${encodeURIComponent(cat.name)}`,
+                  badge: isRtl ? 'تصاميم راقية' : 'Sélection Luxe',
+                }))
+              : categoryUniverses.map((univ) => ({
+                  title: univ.title,
+                  subtitle: univ.subtitle,
+                  image: '/logo.jpg',
+                  href: univ.href,
+                  badge: univ.badge,
+                }))
+            ).map((item, idx) => (
+              <Link
+                key={idx}
+                href={item.href}
+                className="group relative overflow-hidden rounded-3xl bg-neutral-900 border border-neutral-800 hover:border-gold/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-gold flex flex-col justify-between min-h-[260px]"
+              >
+                {/* Background Image with Gradient Overlay */}
+                <div className="absolute inset-0">
+                  <Image
+                    src={item.image || '/logo.jpg'}
+                    alt={item.title}
+                    fill
+                    className="object-cover opacity-40 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                </div>
+
+                {/* Content */}
+                <div className="relative z-10 p-6 md:p-8 flex-1 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="w-12 h-12 rounded-xl bg-gold/10 text-gold border border-gold/30 flex items-center justify-center group-hover:bg-gold group-hover:text-black transition-colors">
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider px-2.5 py-1 rounded-md bg-neutral-800">
-                        {univ.badge}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[11px] font-bold text-gold uppercase tracking-wider px-3 py-1 rounded-full bg-black/60 backdrop-blur-xs border border-gold/30">
+                        {item.badge}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-gold transition-colors">
-                      {univ.title}
+                    <h3 className="text-xl md:text-2xl font-black text-white mb-2 group-hover:text-gold transition-colors">
+                      {item.title}
                     </h3>
-                    <p className="text-neutral-400 text-xs md:text-sm leading-relaxed mb-6">
-                      {univ.subtitle}
+                    <p className="text-neutral-300 text-xs md:text-sm leading-relaxed line-clamp-2">
+                      {item.subtitle}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-gold text-xs font-bold pt-4 border-t border-neutral-800">
+                  <div className="flex items-center gap-2 text-gold text-xs font-bold pt-4 border-t border-white/10 mt-6">
                     <span>{isRtl ? 'تصفح التشكيلة' : 'Découvrir la sélection'}</span>
                     {isRtl ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
                   </div>
-                </Link>
-              )
-            })}
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
